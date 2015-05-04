@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 \documentclass[landscape,final,archE1,fontscale=0.32]{baposter}
-=======
-\documentclass[landscape,final,archE1,fontscale=0.35]{baposter}
->>>>>>> 8ba9bae96d01aa918ae866fbae0fa5fa04674800
 
 \usepackage{calc}
 \usepackage{graphicx}
@@ -149,9 +145,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{itemize}
 \setlength \itemsep{0.2em}
-  \item Extend kaldi DNN (nnet2) for more flexible distributed GPU systems.
-  \item Apply three network (all-reduce, butterfly, and ring) communication strategies to train DNN.
-  \item Compare the convergency and speed among these three network styles.
+  \item Distributed neural network training using multiple GPUs.
+  \item Model average for distributed network training.
+  \item Apply different network communication strategies (all-reduce, butterfly, and ring).
 \end{itemize}
 }
 
@@ -160,17 +156,20 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection*{Condition}
 \begin{itemize}
-\item DNN is a powerful model for classification, but need long training time.
-\item GPU is recommended to speed up the training process.
-\item With mutiple GPUs, one of the bottleneck is the data communication among the nodes.
-\item Mix-butterfly network is applied to reduce the communication amount for gradient descent method in distributed convex optimization problems.
+\setlength \itemsep{0.2em}
+\item Large scale continuous time automatic speech recognition task.
+\item Deep Neural Network with fully connected layers and thousands of hidden nodes.
+\item Multiple GPUs available on different computing nodes.
+\item Data communication among the nodes are bottleneck for distributed training.
 \end{itemize}
 
 \subsection*{Approaches}
 \begin{itemize}
-\item Apply mix-butterfly and ring network communication strategy to speed up the DNN training process in distributed GPUs.
-\item Investigate the coverage speed of different network communication styles for training of DNN (non-convex optimization).
-
+\setlength \itemsep{0.2em}
+\item Data parallelism -- train neural networks locally using partitioned data (GPU based).
+\item Average model parameters among computing nodes every few minibatches (OpenMPI based).
+\item Apply butterfly / ring mixing network communication strategy to reduce data communication.
+\item Special training algorithm (natural gradient SGD) for better covergence rate.
 \end{itemize}
 }
 
@@ -179,16 +178,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{itemize}
 \setlength \itemsep{0.2em}
-\item OpenMPI is used to communicate among the nodes in the network.
-\item ?? Hang could you add some points here?
-\\
-
+\item OpenMPI for data communicate between nodes.
+\item GPU for local neural network training
 \end{itemize}
 \begin{center}
 \includegraphics[width=0.45\linewidth]{framework.jpg}
 \end{center}
-{\footnotesize The figure for the system's framework. When we plan to communicate the parameters, we need to pass the message from GPU to CPU, and send message from one CPU to another CPU by OpenMPI. }
-
 }
 %%%%%%%%%%%%%%%%%%%%%
 %\headerbox{}{name=setup2, column = 1, row = 0}{
@@ -210,17 +205,17 @@
 \headerbox{Parallelization Strategy}{name=strategy,column=1,row=0}{
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection*{All-reduce network}
-In all-reduce network, for each $n$ iterations, all the nodes send weights
+Every $n$ local network updates, all the nodes send weights
 \begin{wrapfigure}{r}{0.45\textwidth}
   \vspace{-70pt}
   \begin{center}
-    \includegraphics[width=0.9\textwidth]{allreduce.jpg}
+    \includegraphics[width=1.0\textwidth]{allreduce.jpg}
   \end{center}
   \vspace{-20pt}
   
   \vspace{-10pt}
 \end{wrapfigure}
-  to the $1^{st}$ node. The $1^{st}$ node will average the received weights, and boardcast the average weight to all the nodes. After one communication time, the information is fully communicated. The communication is the heaviest. 
+to the $1^{st}$ node. The $1^{st}$ node will average the received weights, and boardcast the average weight to all the nodes. After one communication time, the information is fully communicated. The communication is the heaviest. 
 \\
 
 
@@ -229,7 +224,7 @@ In mix-butterfly network, for each $n$ iterations, one node
 \begin{wrapfigure}{r}{0.45\textwidth}
   \vspace{-70pt}
   \begin{center}
-    \includegraphics[width=0.9\textwidth]{butterfly.jpg}
+    \includegraphics[width=1.0\textwidth]{butterfly.jpg}
   \end{center}
   \vspace{-20pt}
   
@@ -242,14 +237,13 @@ In ring network, for each $n$ iterations, each node will
 \begin{wrapfigure}{r}{0.45\textwidth}
   \vspace{-70pt}
   \begin{center}
-    \includegraphics[width=0.9\textwidth]{ring.jpg}
+    \includegraphics[width=1.0\textwidth]{ring.jpg}
   \end{center}
   \vspace{-20pt}
   
   \vspace{-10pt}
 \end{wrapfigure}
  send his weight only to the next node. After reciving message from the previous node, each node averages the weight as the start point for next iteration. After $nodeSize$ communication time, the information is fully communicated. The communication is the same as the butterfly, but the latency is less. 
-
 
 
 }
