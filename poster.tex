@@ -1,4 +1,4 @@
-\documentclass[landscape,final,archE1,fontscale=0.3]{baposter}
+\documentclass[landscape,final,archE1,fontscale=0.32]{baposter}
 
 \usepackage{calc}
 \usepackage{graphicx}
@@ -199,41 +199,41 @@ and hypothesize OOV occurances.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \headerbox{Experiments}{name=experiments,column=2,row=0}{
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection*{Langauge Pack Statistics}
+\subsection*{Convergence rate}
+% a graph of objective function vs iterations
+% natural gradient vs normal gradient 
 \begin{center}
-  \captionof{table}{BABEL data used in this paper}
-  \begin{tabular}{c|c|c}
+\includegraphics[width=0.9\linewidth]{tandem.png}
+\end{center}
+
+
+\subsection*{Scaling factor}
+\begin{center}
+  \captionof{table}{Speedup and scaling factor}
+  \begin{tabular}{c|c|c|c|c|c}
     \hline
-              & version     & kwlist\\
+    Nodes   & 1   & 2   & 4   & 8   & 16 \\
     \hline
-    Assamese & IARPA-babel102b-v0.5a   & conv-eval.kwlist4 \\
-    Bengali  & IARPA-babel103b-v0.4b   & conv-eval.kwlist4 \\
-    Creole   & IARPA-babel201b-v0.2b   & conv-eval.kwlist4 \\
-    Zulu      & IARPA-babel206b-v0.1e  & conv-eval.kwlist4 \\
-    Tamil     & IARPA-babel204b-v1.1b  & conv-eval.kwlist5 \\
+    Time    &  &  &  &  &\\
+    speedup &  &  &  &  &\\
     \hline
   \end{tabular}
 \end{center}
-\vspace{-1.3em}
 
-\subsection*{Recognition Setup}
-\begin{itemize}
-\setlength \itemsep{0.2em}
-\item The Kaldi toolkit for the speech recognition.
-\item PLP + pitch feature.
-\item GMM-HMM => DNN-HMM hybrid system.
-\item Position-independent phones.
-\item Index based lattice search for KWS.
-\end{itemize}
-\vspace{-1em}
+\subsection*{Recognition Results}
+\begin{center}
+  \captionof{table}{Word error rate on different setup}
+  \begin{tabular}{c|c|c|c|c|c}
+    \hline
+    Nodes       & 1   & 2   & 4   & 8   & 16 \\
+    \hline
+    allreduce  &  &  &  &  & \\
+    butterfly   &  &  &  &  & \\
+    ring        &  &  &  &  & \\
+    \hline
+  \end{tabular}
+\end{center}
 
-\subsection*{KWS Setup}
-\begin{itemize}
-\setlength \itemsep{0.2em}
-\item Empirical threasholding for lattice-index-based KWS
-\item Nelder Mead optimization for KWS parameter tuning
-\item KST score normalization for all the methods
-\end{itemize}
 }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -241,8 +241,9 @@ and hypothesize OOV occurances.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{itemize}
 \setlength \itemsep{0.2em}
-\item Syllable transduction is helpful in spotting both IVs and OOVs in KWS. It tends to give a lower false alarm rate.
-\item Combination of phone confusion, syllable search and syllable transduction can boost OOV ATWV
+\item Neural network training can be efficiently speed up by using model averaging techniques.
+\item Natural gradient method contributes to the convergence rate in model averaging setup.
+\item Butterfly mixing can reduce communication time in a further step.
 \end{itemize}
 }
 
