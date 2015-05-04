@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 \documentclass[landscape,final,archE1,fontscale=0.32]{baposter}
+=======
+\documentclass[landscape,final,archE1,fontscale=0.35]{baposter}
+>>>>>>> 8ba9bae96d01aa918ae866fbae0fa5fa04674800
 
 \usepackage{calc}
 \usepackage{graphicx}
@@ -17,6 +21,12 @@
 \usepackage{booktabs, multicol, multirow}
 
 \usepackage[margin=1em]{caption}
+% package I added
+\usepackage{sidecap}
+\usepackage{floatrow}
+\usepackage{wrapfig}
+
+
 \bibliographystyle{plain}
 
 \graphicspath{{images/}{../images/}}
@@ -139,9 +149,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{itemize}
 \setlength \itemsep{0.2em}
-  \item Use syllables for speech recognition and keyword search
-  \item Combine different approaches for OOV keywords
-  \item Validate strategy over several low-resource languages
+  \item Extend kaldi DNN (nnet2) for more flexible distributed GPU systems.
+  \item Apply three network (all-reduce, butterfly, and ring) communication strategies to train DNN.
+  \item Compare the convergency and speed among these three network styles.
 \end{itemize}
 }
 
@@ -150,18 +160,17 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection*{Condition}
 \begin{itemize}
-\item Minority languages. Novel speech sounds, agglomerative morphology, large vocabularies but low resources. 
-\item Limited training data for speech recognizer (\textasciitilde10 hours).
-\item Word Error Rate from 60\% to 80\%.
-\item OOV keyword percentage from 10\% to 25\%
+\item DNN is a powerful model for classification, but need long training time.
+\item GPU is recommended to speed up the training process.
+\item With mutiple GPUs, one of the bottleneck is the data communication among the nodes.
+\item Mix-butterfly network is applied to reduce the communication amount for gradient descent method in distributed convex optimization problems.
 \end{itemize}
 
 \subsection*{Approaches}
 \begin{itemize}
-\item Find IV words that are closest in pronunciation to the OOV keywords (using phone confusion matrix). Search for IV proxies
-and hypothesize OOV occurances.
-\item Use phones, syllables and morphs as subword units for representing OOV words. Perform subword decoding, and search OOV words in subword lattices.
-\item Perform subword decoding. Transduce subword lattices to word lattices, and search keywords in transduced word lattices.
+\item Apply mix-butterfly and ring network communication strategy to speed up the DNN training process in distributed GPUs.
+\item Investigate the coverage speed of different network communication styles for training of DNN (non-convex optimization).
+
 \end{itemize}
 }
 
@@ -170,30 +179,79 @@ and hypothesize OOV occurances.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{itemize}
 \setlength \itemsep{0.2em}
-\item A unigram language model is trained on all keywords.
-\item Interpolate keyword unigram LM with default word language model to get $G_{boost}$.
-\item Rescore transduced word lattices 
-\end{itemize}
-}
+\item OpenMPI is used to communicate among the nodes in the network.
+\item ?? Hang could you add some points here?
+\\
 
+\end{itemize}
+\begin{center}
+\includegraphics[width=0.45\linewidth]{framework.jpg}
+\end{center}
+{\footnotesize The figure for the system's framework. When we plan to communicate the parameters, we need to pass the message from GPU to CPU, and send message from one CPU to another CPU by OpenMPI. }
+
+}
+%%%%%%%%%%%%%%%%%%%%%
+%\headerbox{}{name=setup2, column = 1, row = 0}{
+
+%The figure for the system's framework. 
+%\begin{wrapfigure}{r}{0.5\textwidth}
+%  \vspace{-30pt}
+%  \begin{center}
+%    \includegraphics[width=1.0\textwidth]{framework.jpg}
+%  \end{center}
+%  \vspace{-20pt}
+  
+%  \vspace{-10pt}
+%\end{wrapfigure}
+%When we plan to communicate the parameters, we need to pass the message from GPU to CPU, and send message from one CPU to another CPU by OpenMPI. 
+
+%}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \headerbox{Parallelization Strategy}{name=strategy,column=1,row=0}{
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection*{Word Recognition using WFST}
-\begin{center}
-\includegraphics[width=0.9\linewidth]{tandem.png}
-\end{center}
+\subsection*{All-reduce network}
+In all-reduce network, for each $n$ iterations, all the nodes send weights
+\begin{wrapfigure}{r}{0.45\textwidth}
+  \vspace{-70pt}
+  \begin{center}
+    \includegraphics[width=0.9\textwidth]{allreduce.jpg}
+  \end{center}
+  \vspace{-20pt}
+  
+  \vspace{-10pt}
+\end{wrapfigure}
+  to the $1^{st}$ node. The $1^{st}$ node will average the received weights, and boardcast the average weight to all the nodes. After one communication time, the information is fully communicated. The communication is the heaviest. 
+\\
 
-\subsection*{Keyword Boosted Language Model}
-\begin{itemize}
-\setlength \itemsep{0.2em}
-\item A unigram language model is trained on all keywords.
-\item Interpolate keyword unigram LM with default word language model to get $G_{boost}$.
-\item Rescore transduced word lattices 
-\end{itemize}
-\begin{equation}
-\hat Lat_{syl} \circ L_{syl2wrd} \circ G_{boost}
-\end{equation}
+
+\subsection*{Mix-butterfly network}
+In mix-butterfly network, for each $n$ iterations, one node
+\begin{wrapfigure}{r}{0.45\textwidth}
+  \vspace{-70pt}
+  \begin{center}
+    \includegraphics[width=0.9\textwidth]{butterfly.jpg}
+  \end{center}
+  \vspace{-20pt}
+  
+  \vspace{-10pt}
+\end{wrapfigure}
+ will only communicate with one another node, and average the recieved weight with the origial weight. After $log(nodeSize)$ communication time, the information is fully communicated. The communication is smaller than that in all-reduce network.
+
+\subsection*{Ring network}
+In ring network, for each $n$ iterations, each node will
+\begin{wrapfigure}{r}{0.45\textwidth}
+  \vspace{-70pt}
+  \begin{center}
+    \includegraphics[width=0.9\textwidth]{ring.jpg}
+  \end{center}
+  \vspace{-20pt}
+  
+  \vspace{-10pt}
+\end{wrapfigure}
+ send his weight only to the next node. After reciving message from the previous node, each node averages the weight as the start point for next iteration. After $nodeSize$ communication time, the information is fully communicated. The communication is the same as the butterfly, but the latency is less. 
+
+
+
 }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
