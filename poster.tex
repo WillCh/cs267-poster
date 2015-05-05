@@ -116,7 +116,7 @@
   % ICSI logo
   {\includegraphics[height=7.5em]{images/ICSI_color}}
   % Title
-  {\bf{Parallelizing Neural Network Training using \\Model Averaging and Butterfly Mixing}}
+  {\bf{Parallelization of Neural Network Training using \\Model Averaging and Butterfly Mixing}}
   % Authors
   {Hang Su$^1$$^,$$^2$, Haoyu Chen$^2$\\
   $^1$ International Computer Science Institute, CA, USA ~~~ $^2$ Dept. of EECS, UC Berkeley, CA, USA }
@@ -147,7 +147,7 @@
 \setlength \itemsep{0.2em}
   \item Distributed neural network training using multiple GPUs.
   \item Model average for distributed network training.
-  \item Apply different network communication strategies (all-reduce, butterfly, and ring).
+  \item Apply different network communication strategies (all-reduce, butterfly and ring).
 \end{itemize}
 }
 
@@ -204,70 +204,94 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \headerbox{Parallelization Strategy}{name=strategy,column=1,row=0}{
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{multicols}{2}
 \subsection*{All-reduce network}
-Every $n$ local network updates, all the nodes send weights
-\begin{wrapfigure}{r}{0.45\textwidth}
-  \vspace{-70pt}
-  \begin{center}
-    \includegraphics[width=1.0\textwidth]{allreduce.jpg}
-  \end{center}
-  \vspace{-20pt}
-  
-  \vspace{-10pt}
-\end{wrapfigure}
-to the $1^{st}$ node. The $1^{st}$ node will average the received weights, and boardcast the average weight to all the nodes. After one communication time, the information is fully communicated. The communication is the heaviest. 
-\\
+After every $n$ local updates, all the nodes reduce their parameter together (average), 
+and broadcast the parameter back to all the nodes. This requires high communication
+bandwidth.
 
+\vspace{-0.2cm}
 
-\subsection*{Mix-butterfly network}
-In mix-butterfly network, for each $n$ iterations, one node
-\begin{wrapfigure}{r}{0.45\textwidth}
-  \vspace{-70pt}
-  \begin{center}
-    \includegraphics[width=1.0\textwidth]{butterfly.jpg}
-  \end{center}
-  \vspace{-20pt}
-  
-  \vspace{-10pt}
-\end{wrapfigure}
- will only communicate with one another node, and average the recieved weight with the origial weight. After $log(nodeSize)$ communication time, the information is fully communicated. The communication is smaller than that in all-reduce network.
+\subsection*{Butterfly-mixing}
+In Butterfly-mixing strategy, one node only communicates with one other node, averaging the 
+recieved model with its own model. After $log(nodeSize)$ communication, the information 
+is fully communicated.
+
+\vspace{-0.2cm}
 
 \subsection*{Ring network}
-In ring network, for each $n$ iterations, each node will
-\begin{wrapfigure}{r}{0.45\textwidth}
-  \vspace{-70pt}
-  \begin{center}
-    \includegraphics[width=1.0\textwidth]{ring.jpg}
-  \end{center}
-  \vspace{-20pt}
-  
-  \vspace{-10pt}
-\end{wrapfigure}
- send his weight only to the next node. After reciving message from the previous node, each node averages the weight as the start point for next iteration. After $nodeSize$ communication time, the information is fully communicated. The communication is the same as the butterfly, but the latency is less. 
+In ring network, each node sends its parameter to its right neighbor and receive parameters 
+from its left neighbor. After $nodeSize$ communication, the information is fully communicated.
+This method benefits from the locality of computing nodes.
 
+\begin{center}
+  \includegraphics[width=0.40\textwidth]{allreduce.jpg}
+\end{center}
 
+\begin{center}
+  \includegraphics[width=0.4\textwidth]{butterfly.jpg}
+\end{center}
+
+\begin{center}
+  \includegraphics[width=0.4\textwidth]{ring.jpg}
+\end{center}
+\end{multicols}
+
+}
+
+\headerbox{Natural Gradient SGD}{name=sgd,column=1,below=strategy, above=bottom}{
+\begin{itemize}
+\setlength \itemsep{0.2em}
+\item Take steps along the gradient of a Riemannian parameter surface.
+\item Use inverse fisher matrix $E_t$ as learning-rate matrix.
+\item $\alpha$ denotes original learning rate, $g_t$ denotes plain gradient. Update
+parameters using:
+\end{itemize}
+\begin{equation}
+\theta_{t+1} = \theta_{t} + \alpha_t E_t g_t
+\end{equation}
 }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \headerbox{Experiments}{name=experiments,column=2,row=0}{
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection*{Convergence rate}
+\subsection*{Convergence Status}
 % a graph of objective function vs iterations
 % natural gradient vs normal gradient 
 \begin{center}
-\includegraphics[width=0.9\linewidth]{tandem.png}
+  \captionof{table}{Convergence status on CV set}
+  \begin{tabular}{c|c|c|c|c|c|c}
+    \hline
+           \multicolumn{2}{c|}{Nodes}         & 1    & 2    & 4    & 8    & 16 \\
+    \hline
+\multirow{2}{*}{Allreduce} &    Obj (loss)    & 1.43 & 1.57 & 1.45 & 1.45 & 1.48\\
+                           &    Frame Acc(\%) & 59.7 & 59.3 & 60.2 & 59.9 & 58.5\\
+    \hline
+\multirow{2}{*}{Butterfly} &    Obj (loss)    & --   & --   & 1.47 & 1.52 & 1.70\\
+                           &    Frame Acc(\%) & --   & --   & 60.0 & 58.4 & 54.7 \\
+    \hline
+\multirow{2}{*}{Ring}      &    Obj (loss)    & --   & --   & 1.47 & 1.62 & 1.96\\
+                           &    Frame Acc(\%) & --   & --   & 59.8 & 56.2 & 50.7 \\
+    \hline
+  \end{tabular}
 \end{center}
 
 
 \subsection*{Scaling factor}
 \begin{center}
   \captionof{table}{Speedup and scaling factor}
-  \begin{tabular}{c|c|c|c|c|c}
+  \begin{tabular}{c|c|c|c|c|c|c}
     \hline
-    Nodes   & 1   & 2   & 4   & 8   & 16 \\
+           \multicolumn{2}{c|}{Nodes}   & 1    & 2    & 4    & 8    & 16 \\
     \hline
-    Time    &  &  &  &  &\\
-    speedup &  &  &  &  &\\
+\multirow{2}{*}{Allreduce} &    Time    & 6.59 & 3.39 & 1.90 & 1.01 & 0.700\\
+                           &    speedup & --   & 1.94 & 3.47 & 6.52 & 9.41 \\
+    \hline
+\multirow{2}{*}{Butterfly} &    Time    & --   & --   & 1.83 & 1.00 & 0.582\\
+                           &    speedup & --   & --   & 3.60 & 6.59 & 11.32\\
+    \hline
+\multirow{2}{*}{Ring}      &    Time    & --   & --   & 1.84 & 1.01 & 0.517\\
+                           &    speedup & --   & --   & 3.58 & 6.52 & 12.75\\
     \hline
   \end{tabular}
 \end{center}
@@ -277,11 +301,11 @@ In ring network, for each $n$ iterations, each node will
   \captionof{table}{Word error rate on different setup}
   \begin{tabular}{c|c|c|c|c|c}
     \hline
-    Nodes       & 1   & 2   & 4   & 8   & 16 \\
+    Nodes       & 1    & 2     & 4    & 8    & 16 \\
     \hline
-    allreduce  &  &  &  &  & \\
-    butterfly   &  &  &  &  & \\
-    ring        &  &  &  &  & \\
+    allreduce   & 18.4 & 17.9  & 18.3 & 18.3 & 18.7 \\
+    butterfly   & --   & --    & 18.5 & 18.7 & 20.6 \\
+    ring        & --   & --    & 18.5 & 19.6 & 22.1\\
     \hline
   \end{tabular}
 \end{center}
@@ -295,7 +319,8 @@ In ring network, for each $n$ iterations, each node will
 \setlength \itemsep{0.2em}
 \item Neural network training can be efficiently speed up by using model averaging techniques.
 \item Natural gradient method contributes to the convergence rate in model averaging setup.
-\item Butterfly mixing can reduce communication time in a further step.
+\item Butterfly-mixing and ring reduction can reduce communication time in a further step.
+\item Training using Butterfly-mixing and ring reduction does not converge well as the number of jobs goes up to 16.
 \end{itemize}
 }
 
